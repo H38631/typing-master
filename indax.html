@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hacker Typing Master</title>
+  <style>
+    :root{
+      --bg:#081012;
+      --panel:#071012;
+      --accent:#00ff6a;
+      --muted:#7af2a0;
+      --glass: rgba(255,255,255,0.03);
+      --mono: 'Courier New', monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0;padding:20px;
+      font-family:var(--mono);
+      background:radial-gradient(ellipse at 10% 10%, rgba(0,255,106,0.03), transparent 10%),
+                 linear-gradient(180deg,#031015 0%, var(--bg) 100%);
+      color:var(--muted);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .container{max-width:980px;margin:0 auto;display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start}
+    header{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:center}
+    h1{margin:0;color:var(--accent);font-size:20px}
+    p.lead{margin:0;color:rgba(122,242,160,0.7)}
+
+    /* left panel */
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(0,255,106,0.06);padding:18px;border-radius:12px;box-shadow:0 6px 30px rgba(0,0,0,0.6)}
+    .typing-area{min-height:240px;padding:18px;background:var(--glass);border-radius:10px;position:relative;overflow:hidden}
+
+    .text-display{font-size:18px;line-height:1.7;color:#c7ffd6}
+    .char{opacity:0.9}
+    .char.correct{color:var(--accent)}
+    .char.wrong{color:#ff6a6a;text-decoration:underline wavy}
+    .char.current{background:rgba(0,255,106,0.06);border-bottom:2px solid var(--accent)}
+
+    .cursor{width:2px;background:var(--accent);position:absolute;animation:blink 1s steps(2) infinite}
+    @keyframes blink{50%{opacity:0}}
+
+    .controls{display:flex;gap:10px;margin-top:12px}
+    button{background:transparent;border:1px solid rgba(0,255,106,0.12);padding:8px 12px;border-radius:8px;color:var(--muted);cursor:pointer}
+    button.primary{background:linear-gradient(90deg, rgba(0,255,106,0.06), rgba(0,255,106,0.02));border-color:rgba(0,255,106,0.22)}
+
+    /* right panel */
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .stat{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;text-align:center}
+    .stat h3{margin:0;font-size:18px;color:var(--accent)}
+    .stat p{margin:6px 0 0;font-size:13px;color:var(--muted)}
+
+    .settings{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+    label{font-size:13px;color:var(--muted)}
+    select,input[type=range]{width:100%;}
+
+    footer{grid-column:1 / -1;margin-top:14px;color:rgba(122,242,160,0.6);font-size:13px}
+
+    /* responsive */
+    @media(max-width:900px){.container{grid-template-columns:1fr;}.panel{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Hacker Typing Master</h1>
+        <p class="lead">Typing practice with a hacker vibe — html/css/js based. Chalo shuru karein!</p>
+      </div>
+      <div>
+        <small>Made for fast typing practice ⚡</small>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="typing-area" id="typingArea" tabindex="0">
+        <div id="textDisplay" class="text-display" aria-live="polite"></div>
+        <div id="hiddenInput" style="position:absolute;left:-9999px;top:auto;" contenteditable="true"></div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn" class="primary">Start</button>
+        <button id="resetBtn">Reset</button>
+        <button id="randomizeBtn">New Text</button>
+        <div style="margin-left:auto">Mode:
+          <select id="modeSelect">
+            <option value="words">Words</option>
+            <option value="paragraph">Paragraph</option>
+            <option value="code">Code Snippets</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;color:rgba(122,242,160,0.6);font-size:13px">
+        Tip: Click the left panel and start typing. Use Backspace to fix mistakes before moving on.
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="stats">
+        <div class="stat"><h3 id="wpm">0</h3><p>WPM</p></div>
+        <div class="stat"><h3 id="acc">100%</h3><p>Accuracy</p></div>
+        <div class="stat"><h3 id="chars">0</h3><p>Chars</p></div>
+        <div class="stat"><h3 id="mistakes">0</h3><p>Mistakes</p></div>
+      </div>
+
+      <div class="settings">
+        <label>Time (seconds)</label>
+        <input id="timeRange" type="range" min="15" max="300" value="60">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>15</span><span id="timeVal">60</span><span>300</span></div>
+
+        <label>Difficulty (words)</label>
+        <input id="wordCount" type="range" min="10" max="200" value="50">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>10</span><span id="wordCountVal">50</span><span>200</span></div>
+
+        <label>Theme</label>
+        <select id="themeSelect">
+          <option value="default">Hacker Green</option>
+          <option value="blue">Deep Blue</option>
+          <option value="sunset">Sunset</option>
+        </select>
+      </div>
+    </aside>
+
+    <footer>
+      <small>Have fun. This is for practice/education only — no real hacking! 🖥️</small>
+    </footer>
+  </div>
+
+  <script>
+    // Basic data & helpers
+    const words = `access breach exploit payload pwned root kernel vector cipher encrypt decrypt backdoor injection shell reverse bind overflow stack heap trojan worm sniff packet forge spoof proxy tunnel headers cookies csrf saml oauth jwt session token exploit kit fuzz`.split(' ');
+    const paragraphs = [
+      `The quick neon fox jumps over the lazy binary dog. Packets stream through virtual tunnels as code compiles in the dark terminal.`,
+      `System logs whisper secrets; fragments of text and hex, interlaced with sleeping processes. Type fast to keep up with the stream.`
+    ];
+    const codeSnippets = [
+      `for (let i = 0; i < 10; i++) { console.log(\"hack the planet\"); }`,
+      `function auth(user){ if(user.token === null) throw new Error('unauth'); return true; }`
+    ];
+
+    // UI refs
+    const textDisplay = document.getElementById('textDisplay');
+    const typingArea = document.getElementById('typingArea');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const randomizeBtn = document.getElementById('randomizeBtn');
+    const modeSelect = document.getElementById('modeSelect');
+    const timeRange = document.getElementById('timeRange');
+    const timeVal = document.getElementById('timeVal');
+    const wpmEl = document.getElementById('wpm');
+    const accEl = document.getElementById('acc');
+    const charsEl = document.getElementById('chars');
+    const mistakesEl = document.getElementById('mistakes');
+    const wordCount = document.getElementById('wordCount');
+    const wordCountVal = document.getElementById('wordCountVal');
+    const themeSelect = document.getElementById('themeSelect');
+
+    // state
+    let text = '';
+    let charElems = [];
+    let position = 0;
+    let started = false;
+    let startTime = null;
+    let timer = null;
+    let totalMistakes = 0;
+    let timedMode = true;
+    let timeLeft = parseInt(timeRange.value,10);
+
+    // helpers
+    function generateText(){
+      const mode = modeSelect.value;
+      if(mode === 'words'){
+        const count = parseInt(wordCount.value,10);
+        const out = [];
+        for(let i=0;i<count;i++) out.push(words[Math.floor(Math.random()*words.length)]);
+        return out.join(' ');
+      } else if(mode === 'paragraph'){
+        return paragraphs[Math.floor(Math.random()*paragraphs.length)];
+      } else {
+        return codeSnippets[Math.floor(Math.random()*codeSnippets.length)];
+      }
+    }
+
+    function renderText(){
+      textDisplay.innerHTML='';
+      text = generateText();
+      position = 0;
+      totalMistakes = 0;
+      charElems = [];
+      for(const ch of text){
+        const span = document.createElement('span');
+        span.className='char';
+        span.textContent = ch;
+        textDisplay.appendChild(span);
+        charElems.push(span);
+      }
+      if(charElems[0]) charElems[0].classList.add('current');
+      updateStats();
+    }
+
+    function startTest(){
+      if(started) return;
+      started = true;
+      startTime = Date.now();
+      timeLeft = parseInt(timeRange.value,10);
+      timer = setInterval(()=>{
+        timeLeft--;
+        timeVal.textContent = timeLeft;
+        if(timeLeft <= 0){
+          endTest();
+        }
+      },1000);
+      typingArea.focus();
+    }
+
+    function endTest(){
+      started=false;
+      clearInterval(timer);
+      timer=null;
+      computeWPM();
+      alert(`Time's up! WPM: ${wpmEl.textContent} | Accuracy: ${accEl.textContent}`);
+    }
+
+    function resetTest(){
+      started=false;clearInterval(timer);timer=null;position=0;totalMistakes=0;startTime=null;timeLeft=parseInt(timeRange.value,10);timeVal.textContent=timeLeft;renderText();
+    }
+
+    function updateStats(){
+      const elapsed = started ? ((Date.now()-startTime)/1000) : 1;
+      const correctChars = charElems.reduce((acc,el)=> acc + (el.classList.contains('correct')?1:0),0);
+      const totalTyped = position;
+      const accuracy = totalTyped === 0 ? 100 : Math.max(0, Math.round((correctChars/totalTyped)*100));
+      accEl.textContent = accuracy + '%';
+      charsEl.textContent = totalTyped;
+      mistakesEl.textContent = totalMistakes;
+      // simple WPM: (correctChars / 5) / minutes
+      const wpm = Math.round(((correctChars/5) / Math.max(0.016, (elapsed/60))));
+      wpmEl.textContent = wpm;
+    }
+
+    function computeWPM(){ updateStats(); }
+
+    // keyboard handling
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Tab') { e.preventDefault(); }
+      if(!started && e.key.length === 1){ startTest(); }
+      if(e.key === 'Escape'){ resetTest(); }
+    });
+
+    typingArea.addEventListener('keypress', (e)=>{
+      e.preventDefault();
+      if(!started) startTest();
+      if(position >= charElems.length) return;
+      const expected = charElems[position].textContent;
+      const typed = e.key;
+      if(typed === expected){
+        charElems[position].classList.remove('current');
+        charElems[position].classList.add('correct');
+        position++;
+        if(position < charElems.length) charElems[position].classList.add('current');
+      } else {
+        charElems[position].classList.add('wrong');
+        totalMistakes++;
+      }
+      updateStats();
+    });
+
+    // backspace handling
+    typingArea.addEventListener('keydown', (e)=>{
+      if(e.key === 'Backspace'){
+        e.preventDefault();
+        if(position === 0) return;
+        // clear current/previous state
+        if(position < charElems.length) charElems[position].classList.remove('current');
+        position--;
+        charElems[position].classList.remove('wrong','correct');
+        charElems[position].classList.add('current');
+        updateStats();
+      }
+    });
+
+    // UI events
+    startBtn.addEventListener('click', ()=>{ startTest(); });
+    resetBtn.addEventListener('click', ()=>{ resetTest(); });
+    randomizeBtn.addEventListener('click', ()=>{ renderText(); });
+    modeSelect.addEventListener('change', ()=>{ renderText(); });
+    wordCount.addEventListener('input', ()=>{ wordCountVal.textContent = wordCount.value; });
+    timeRange.addEventListener('input', ()=>{ timeVal.textContent = timeRange.value; });
+    themeSelect.addEventListener('change', (e)=>{ applyTheme(e.target.value); });
+
+    function applyTheme(name){
+      if(name === 'blue'){
+        document.documentElement.style.setProperty('--accent','#48d1ff');
+        document.documentElement.style.setProperty('--muted','#bfefff');
+      } else if(name === 'sunset'){
+        document.documentElement.style.setProperty('--accent','#ffb86b');
+        document.documentElement.style.setProperty('--muted','#ffdcb3');
+      } else {
+        document.documentElement.style.setProperty('--accent','#00ff6a');
+        document.documentElement.style.setProperty('--muted','#7af2a0');
+      }
+    }
+
+    // initialize
+    timeVal.textContent = timeRange.value;
+    wordCountVal.textContent = wordCount.value;
+    renderText();
+
+    // small accessibility: focus area when clicked
+    typingArea.addEventListener('click', ()=>{ typingArea.focus(); });
+  </script>
+</body>
+</html>
